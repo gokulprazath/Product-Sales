@@ -323,6 +323,7 @@
 
 <script>
 const STORE_KEY = 'expensetrack_v2';
+const STORE_KEY_V1 = 'expensetrack_v1';
 
 const CAT_COLORS = {
   'Food':          { bg:'#fde8cc', color:'#7a3a08' },
@@ -433,7 +434,7 @@ function logExpense() {
   showToast('log-toast','Expense saved! ✓',true);
 }
 
-function today() { return new Date().toISOString().slice(0,10); }
+function today() { const d=new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; }
 
 function showToast(id, msg, ok) {
   const t = document.getElementById(id);
@@ -493,15 +494,20 @@ function setRange(type, btnEl) {
 }
 
 function getRangeDates() {
+  // Use local date parts to avoid UTC timezone shifting the date
+  const pad = d => {
+    const y = d.getFullYear();
+    const m = String(d.getMonth()+1).padStart(2,'0');
+    const day = String(d.getDate()).padStart(2,'0');
+    return `${y}-${m}-${day}`;
+  };
   const now = new Date();
-  const pad = d => d.toISOString().slice(0,10);
   const to = pad(now);
-  if (currentRange === 'week')    { const d=new Date(now); d.setDate(d.getDate()-7);       return {from:pad(d),to}; }
-  if (currentRange === 'month')   { const d=new Date(now); d.setMonth(d.getMonth()-1);     return {from:pad(d),to}; }
-  if (currentRange === '3months') { const d=new Date(now); d.setMonth(d.getMonth()-3);     return {from:pad(d),to}; }
+  if (currentRange === 'week')    { const d=new Date(now); d.setDate(d.getDate()-7);        return {from:pad(d),to}; }
+  if (currentRange === 'month')   { const d=new Date(now); d.setMonth(d.getMonth()-1);      return {from:pad(d),to}; }
+  if (currentRange === '3months') { const d=new Date(now); d.setMonth(d.getMonth()-3);      return {from:pad(d),to}; }
   if (currentRange === 'year')    { const d=new Date(now); d.setFullYear(d.getFullYear()-1); return {from:pad(d),to}; }
   if (currentRange === 'all')     { return {from:'0000-01-01',to:'9999-12-31'}; }
-  // custom
   return {
     from: document.getElementById('range-from').value || '0000-01-01',
     to:   document.getElementById('range-to').value   || '9999-12-31'
