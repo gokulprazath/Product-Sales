@@ -102,8 +102,11 @@
   /* Product rows */
   #product-rows { display: flex; flex-direction: column; gap: 10px; margin-bottom: 16px; }
   .product-row {
-    display: grid; grid-template-columns: 1fr 120px 36px;
+    display: grid; grid-template-columns: 1fr 80px 120px 36px;
     gap: 8px; align-items: center; animation: fadeIn 0.2s ease;
+  }
+  @media (max-width: 600px) {
+    .product-row { grid-template-columns: 1fr 70px 100px 36px; }
   }
   @keyframes fadeIn { from { opacity:0; transform:translateY(-6px); } to { opacity:1; transform:none; } }
 
@@ -264,7 +267,14 @@
     </div>
 
     <label style="font-size:0.7rem;text-transform:uppercase;letter-spacing:1px;color:var(--muted);">Products & Prices</label>
-    <p class="hint" style="margin-bottom:12px;">Add each product you bought and its price.</p>
+    <p class="hint" style="margin-bottom:12px;">Add each product, quantity, and unit price.</p>
+
+    <div style="display:grid;grid-template-columns:1fr 80px 120px 36px;gap:8px;padding:0 0 4px 0;">
+      <span style="font-size:0.65rem;text-transform:uppercase;letter-spacing:0.8px;color:var(--muted);">Product</span>
+      <span style="font-size:0.65rem;text-transform:uppercase;letter-spacing:0.8px;color:var(--muted);">Qty</span>
+      <span style="font-size:0.65rem;text-transform:uppercase;letter-spacing:0.8px;color:var(--muted);">Unit Price</span>
+      <span></span>
+    </div>
 
     <div id="product-rows"></div>
     <button class="add-product-btn" onclick="addProductRow()">+ Add Product</button>
@@ -386,7 +396,7 @@ function getEffectiveCat() {
 // LOG
 let rowCount = 0;
 
-function addProductRow(name='', price='') {
+function addProductRow(name='', price='', qty=1) {
   const id = rowCount++;
   const wrap = document.getElementById('product-rows');
   const div = document.createElement('div');
@@ -394,6 +404,7 @@ function addProductRow(name='', price='') {
   div.id = 'prow-' + id;
   div.innerHTML = `
     <input type="text" placeholder="Product name" class="pname" value="${name}"/>
+    <input type="number" placeholder="Qty" class="pqty" min="1" step="1" value="${qty}" style="text-align:center"/>
     <input type="number" placeholder="Price $" class="pprice" min="0" step="0.01" value="${price}"/>
     <button class="remove-btn" onclick="removeRow('prow-${id}')">×</button>
   `;
@@ -414,7 +425,8 @@ function logExpense() {
   document.querySelectorAll('.product-row').forEach(row => {
     const n = row.querySelector('.pname').value.trim();
     const p = parseFloat(row.querySelector('.pprice').value);
-    if (n) products[n] = isNaN(p) ? 0 : p;
+    const q = parseInt(row.querySelector('.pqty').value) || 1;
+    if (n) products[n] = { price: isNaN(p) ? 0 : p, qty: q };
   });
 
   if (!Object.keys(products).length) { showToast('log-toast','Add at least one product.',false); return; }
@@ -451,9 +463,11 @@ function doLookup() {
 
   const matches = [];
   load().forEach(entry => {
-    Object.entries(entry.products).forEach(([name, price]) => {
+    Object.entries(entry.products).forEach(([name, v]) => {
+      const price = typeof v === 'object' ? v.price : v;
+      const qty   = typeof v === 'object' ? v.qty   : 1;
       if (name.toLowerCase().includes(q))
-        matches.push({ shop: entry.shop, product: name, price, date: entry.date, category: entry.category || '' });
+        matches.push({ shop: entry.shop, product: name, price, qty, date: entry.date, category: entry.category || '' });
     });
   });
 
@@ -468,11 +482,14 @@ function doLookup() {
       <div>
         <div class="result-shop">${m.shop}</div>
         <div class="result-meta">
-          ${m.product} · ${m.date}
+          ${m.product}${m.qty>1 ? ` × ${m.qty}` : ''} · ${m.date}
           ${m.category ? `<span class="cat-badge" style="${catStyle(m.category)}">${m.category}</span>` : ''}
         </div>
       </div>
-      <div class="result-price">$${m.price.toFixed(2)}</div>
+      <div style="text-align:right">
+        <div class="result-price">$${(m.price*m.qty).toFixed(2)}</div>
+        ${m.qty>1 ? `<div style="font-size:0.7rem;color:var(--muted)">$${m.price.toFixed(2)} each</div>` : ''}
+      </div>
     </div>
   `).join('');
 }
@@ -522,13 +539,13 @@ function renderHistory() {
 
   const ranged = allData.filter(e => e.date >= from && e.date <= to);
 
-  const totalSpend = ranged.reduce((s,e) => s + Object.values(e.products).reduce((a,b)=>a+b,0), 0);
+  const totalSpend = ranged.reduce((s,e) => s + Object.values(e.products).reduce((a,v) => a + (typeof v==='object' ? v.price*v.qty : v), 0), 0);
   const shopSet = new Set(ranged.map(e=>e.shop));
   const prodSet = new Set(ranged.flatMap(e=>Object.keys(e.products)));
   const catTotals = {};
   ranged.forEach(e => {
     const c = e.category || 'Other';
-    catTotals[c] = (catTotals[c]||0) + Object.values(e.products).reduce((a,b)=>a+b,0);
+    catTotals[c] = (catTotals[c]||0) + Object.values(e.products).reduce((a,v) => a + (typeof v==='object' ? v.price*v.qty : v), 0);
   });
   const topCat = Object.entries(catTotals).sort((a,b)=>b[1]-a[1])[0];
 
@@ -553,10 +570,15 @@ function renderHistory() {
   }
 
   const rows = [...filtered].reverse().map(e => {
-    const tags = Object.entries(e.products).map(([n,p]) =>
-      `<span class="product-tag">${n} <span class="ptag-price">$${p.toFixed(2)}</span></span>`
-    ).join('');
-    const total = Object.values(e.products).reduce((a,b)=>a+b,0);
+    const tags = Object.entries(e.products).map(([n, v]) => {
+      const price = typeof v === 'object' ? v.price : v;
+      const qty   = typeof v === 'object' ? v.qty   : 1;
+      const sub   = price * qty;
+      return `<span class="product-tag">${n}${qty>1?` ×${qty}`:''} <span class="ptag-price">$${sub.toFixed(2)}</span></span>`;
+    }).join('');
+    const total = Object.values(e.products).reduce((s,v) => {
+      return s + (typeof v === 'object' ? v.price * v.qty : v);
+    }, 0);
     const cat = e.category || 'Other';
     return `<tr>
       <td>${e.date}</td>
@@ -595,29 +617,31 @@ function exportExcel() {
   const { from, to } = getRangeDates();
   const data = allData.filter(e => e.date >= from && e.date <= to);
 
-  const rows = [['Date','Category','Shop','Product','Price ($)']];
+  const rows = [['Date','Category','Shop','Product','Qty','Unit Price ($)','Subtotal ($)']];
   data.forEach(e => {
-    Object.entries(e.products).forEach(([prod, price]) => {
-      rows.push([e.date, e.category||'Other', e.shop, prod, price]);
+    Object.entries(e.products).forEach(([prod, v]) => {
+      const price = typeof v === 'object' ? v.price : v;
+      const qty   = typeof v === 'object' ? v.qty   : 1;
+      rows.push([e.date, e.category||'Other', e.shop, prod, qty, price, price*qty]);
     });
   });
 
   const wb = XLSX.utils.book_new();
   const ws = XLSX.utils.aoa_to_sheet(rows);
-  ws['!cols'] = [{wch:12},{wch:16},{wch:20},{wch:28},{wch:12}];
+  ws['!cols'] = [{wch:12},{wch:16},{wch:20},{wch:28},{wch:6},{wch:14},{wch:14}];
   XLSX.utils.book_append_sheet(wb, ws, 'Expenses');
 
   const catTotals = {};
   data.forEach(e => {
     const c = e.category||'Other';
-    catTotals[c] = (catTotals[c]||0) + Object.values(e.products).reduce((a,b)=>a+b,0);
+    catTotals[c] = (catTotals[c]||0) + Object.values(e.products).reduce((a,v) => a+(typeof v==='object'?v.price*v.qty:v), 0);
   });
   const ws2 = XLSX.utils.aoa_to_sheet([['Category','Total ($)'],...Object.entries(catTotals).sort((a,b)=>b[1]-a[1])]);
   ws2['!cols'] = [{wch:20},{wch:14}];
   XLSX.utils.book_append_sheet(wb, ws2, 'By Category');
 
   const shopTotals = {};
-  data.forEach(e => { shopTotals[e.shop] = (shopTotals[e.shop]||0) + Object.values(e.products).reduce((a,b)=>a+b,0); });
+  data.forEach(e => { shopTotals[e.shop] = (shopTotals[e.shop]||0) + Object.values(e.products).reduce((a,v) => a+(typeof v==='object'?v.price*v.qty:v), 0); });
   const ws3 = XLSX.utils.aoa_to_sheet([['Shop','Total ($)'],...Object.entries(shopTotals).sort((a,b)=>b[1]-a[1])]);
   ws3['!cols'] = [{wch:24},{wch:14}];
   XLSX.utils.book_append_sheet(wb, ws3, 'By Shop');
