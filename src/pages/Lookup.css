@@ -1,0 +1,72 @@
+.lookup-panel { animation: fadeIn 0.2s ease; }
+
+.lookup-box {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 32px;
+}
+.lookup-box input {
+  flex: 1;
+  font-size: 1rem;
+  padding: 12px 18px;
+}
+
+.lookup-btn {
+  padding: 12px 28px;
+  background: var(--ink);
+  color: var(--paper);
+  border: none;
+  border-radius: 4px;
+  font-family: 'DM Mono', monospace;
+  font-size: 0.85rem;
+  cursor: pointer;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  transition: background 0.15s;
+  white-space: nowrap;
+}
+.lookup-btn:hover:not(:disabled) { background: var(--amber); }
+.lookup-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.lookup-results {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.result-card {
+  background: var(--cream);
+  border: 1.5px solid var(--border);
+  border-radius: 6px;
+  padding: 16px 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  animation: fadeIn 0.2s ease;
+}
+
+.result-shop {
+  font-family: 'DM Serif Display', serif;
+  font-size: 1.15rem;
+}
+.result-price {
+  font-size: 1.1rem;
+  color: var(--amber);
+  font-weight: 500;
+}
+.result-meta {
+  font-size: 0.7rem;
+  color: var(--muted);
+  margin-top: 3px;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.no-results {
+  text-align: center;
+  padding: 48px;
+  color: var(--muted);
+  font-size: 0.85rem;
+}

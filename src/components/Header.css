@@ -1,0 +1,44 @@
+.app-header {
+  background: var(--ink);
+  color: var(--paper);
+  padding: 18px 40px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.3);
+}
+
+.logo {
+  font-family: 'DM Serif Display', serif;
+  font-size: 1.7rem;
+  letter-spacing: -0.5px;
+}
+.logo span {
+  color: var(--amber-light);
+  font-style: italic;
+}
+
+.header-actions {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.header-email {
+  font-size: 0.72rem;
+  color: var(--muted);
+  letter-spacing: 0.3px;
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@media (max-width: 600px) {
+  .app-header { padding: 14px 16px; }
+  .header-email { display: none; }
+}

@@ -61,9 +61,8 @@ export default function History({ exportTrigger }) {
 
   // Re-export when triggered from parent (Header button)
   useEffect(() => {
-    if (exportTrigger > 0) handleExport();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [exportTrigger]);
+    if (exportTrigger > 0) handleExport(); // eslint-disable-line
+  }, [exportTrigger]); // eslint-disable-line
 
   const { from, to } = getRangeDates(range, customFrom, customTo);
 
@@ -106,7 +105,7 @@ export default function History({ exportTrigger }) {
   };
 
   // Expose clearAll to parent via window (simple approach)
-  useEffect(() => { window.__clearAll = handleClearAll; }, []);  // eslint-disable-line
+  useEffect(() => { window.__clearAll = handleClearAll; }); // eslint-disable-line
 
   const handleExport = () => exportToExcel(filtered, { from, to });
 
